@@ -1,0 +1,62 @@
+{
+  "server": {
+    "port": 8080,
+    "host": "0.0.0.0",
+    "ssl": {
+      "enabled": false,
+      "cert": "/path/to/cert.pem",
+      "key": "/path/to/key.pem"
+    },
+    "timeout": 30000,
+    "maxRequestSize": "10mb"
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "file": "logs/proxy.log"
+  },
+  "rateLimiting": {
+    "enabled": true,
+    "maxRequests": 100,
+    "timeWindow": 60
+  },
+  "loadBalance": "round_robin",
+  "routes": [
+    {
+      "name": "api-service",
+      "path": "/api",
+      "targets": [
+        { "host": "localhost", "port": 3000, "weight": 3 },
+        { "host": "localhost", "port": 3001, "weight": 1 },
+        "http://localhost:9000"
+      ],
+      "loadBalance": "least_traffic",
+      "headers": {
+        "add": {
+          "X-Proxy-By": "MyProxy"
+        },
+        "remove": ["X-Powered-By"]
+      }
+    },
+    {
+        "name": "more-detailed-api",
+        "path": "/api/v3",
+        "targets": [ "http://localhost:9000", "http://localhost:9001" ],
+        "headers": {
+        "add": {
+          "X-Frame-Options": "DIFFERENTORIGIN"
+        }
+      }
+    },
+    {
+      "name": "frontend",
+      "path": "/",
+      "targets": [{ "host": "localhost", "port": 8000 }],
+      "headers": {
+        "add": {
+          "X-Frame-Options": "SAMEORIGIN"
+        }
+      }
+    }
+  ]
+}

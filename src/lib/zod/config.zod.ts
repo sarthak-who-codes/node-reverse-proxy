@@ -76,13 +76,13 @@ export const configSchema = z.object({
       .min(0)
       .max(65535),
     host: z.string().min(1),
-    ssl: z
-      .object({
-        enabled: z.boolean(),
-        cert: z.string(),
-        key: z.string(),
-      })
-      .optional(),
+    // ssl: z
+    //   .object({
+    //     enabled: z.boolean(),
+    //     cert: z.string(),
+    //     key: z.string(),
+    //   })
+    //   .optional(),
     timeout: z.number().default(60 * 1000),
     maxRequestSize: z.enum([
       "1mb",
@@ -114,7 +114,7 @@ export const configSchema = z.object({
         "silent",
         "trace",
       ]),
-      file: z.string().optional(),
+      file: z.string(),
     })
     .optional(),
   loadBalance: z

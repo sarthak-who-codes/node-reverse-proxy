@@ -2,11 +2,6 @@
   "server": {
     "port": 8080,
     "host": "0.0.0.0",
-    "ssl": {
-      "enabled": false,
-      "cert": "/path/to/cert.pem",
-      "key": "/path/to/key.pem"
-    },
     "timeout": 30000,
     "maxRequestSize": "10mb"
   },

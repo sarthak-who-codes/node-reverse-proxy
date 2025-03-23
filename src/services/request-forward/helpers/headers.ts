@@ -1,4 +1,4 @@
-import { IncomingMessage } from "node:http";
+import { IncomingHttpHeaders, IncomingMessage } from "node:http";
 import { TRouteDefinition } from "./route-map.js";
 
 export function transformHeaders(
@@ -22,4 +22,19 @@ export function transformHeaders(
   // console.log(newHeaders);
 
   return newHeaders;
+}
+
+//Transforms http headers to fetch header type
+export function transformHttpHeaders(httpHeaders: IncomingHttpHeaders): HeadersInit {
+  const fetchHeaders = new Headers();
+
+  Object.entries(httpHeaders).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((v) => fetchHeaders.append(key, v));
+    } else if (value) {
+      fetchHeaders.append(key, value);
+    }
+  });
+
+  return fetchHeaders;
 }

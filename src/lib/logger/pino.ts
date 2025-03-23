@@ -4,24 +4,26 @@ import { pino, Logger } from "pino";
 let logger: Logger | undefined = undefined;
 
 export function initializeLogger(
-  logLevel: "info" | "debug" | "warn" | "error" | "fatal" | "silent" | "trace"
+  logLevel: "info" | "debug" | "warn" | "error" | "fatal" | "silent" | "trace",
+  destinationPath: string
 ): Logger {
   if (logger) return logger;
 
-  logger = pino({
-    level: logLevel,
-    transport: {
-      target: "pino-pretty",
-      options: { colorize: true },
+  logger = pino(
+    {
+      level: logLevel,
     },
-  });
+    pino.destination({
+      dest: destinationPath,
+    })
+  );
 
   return logger;
 }
 
 export function getLogger() {
   if (!logger) {
-    return initializeLogger("info");
+    return initializeLogger("info", "logs.txt");
   }
 
   return logger;
@@ -36,7 +38,7 @@ export function logEvents(
   logLevel: "info" | "debug" | "warn" | "error" | "fatal" | "silent" | "trace"
 ) {
   const start = Date.now();
-  const logger = initializeLogger(logLevel);
+  const logger = initializeLogger(logLevel, "logs.txt");
 
   res.on("finish", () => {
     logger.info({

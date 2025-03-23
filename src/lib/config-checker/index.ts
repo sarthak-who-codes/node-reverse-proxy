@@ -18,6 +18,4 @@ export async function getValidatedConfig() {
     throw new Error("File s not of valid configuration type");
 
   return await validateConfig(fileExist.fileData);
-
-
 }

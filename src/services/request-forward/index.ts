@@ -1,9 +1,4 @@
-import {
-  IncomingHttpHeaders,
-  IncomingMessage,
-  ServerResponse,
-} from "node:http";
-import { getRouteMap, TRouteDefinition } from "./helpers/route-map.js";
+import { IncomingMessage, ServerResponse } from "node:http";
 import { getRequestBody } from "./helpers/request-body.js";
 import { Readable } from "node:stream";
 import { cacheMiddleware, setCache } from "../cache/index.js";
@@ -11,6 +6,8 @@ import { LeastConnection } from "./helpers/load-balance/least-connection.js";
 import { rateLimiterMiddleware } from "../rate-limit/index.js";
 import { logEvents } from "../../lib/logger/pino.js";
 import { TConfigSchmea } from "../../lib/zod/config.zod.js";
+import { getRouteConfig } from "./helpers/route-config.js";
+import { transformHttpHeaders } from "./helpers/headers.js";
 
 export async function forwadingMiddleware(
   req: IncomingMessage,
@@ -68,7 +65,7 @@ export async function forwadingMiddleware(
     routeDefinition.lbInstance.releaseServer(serverUrl);
   }
 
-  // Cloning is needed as
+  // Cloning is needed as readable streams can be read only once
   const clonedUpstreamRes = upstreamResponse.clone();
   let upstreamResBody = undefined;
 
@@ -93,7 +90,6 @@ export async function forwadingMiddleware(
       upstreamResStatusText: clonedUpstreamRes.statusText,
     });
   }
-  console.log(Object.fromEntries(upstreamResponse.headers.entries()));
 
   const upstreamHeaders = Object.fromEntries(
     upstreamResponse.headers.entries()
@@ -104,6 +100,7 @@ export async function forwadingMiddleware(
     upstreamResponse.statusText,
     upstreamHeaders
   );
+
   upstreamResponse.body
     ? Readable.from(upstreamResponse.body).pipe(res)
     : res.end();
@@ -120,34 +117,4 @@ export async function forwadingMiddleware(
   }
 
   return;
-}
-
-// Gets the route definition
-function getRouteConfig(url: string): TRouteDefinition | null {
-  const routeMap = getRouteMap();
-  let routeValue: TRouteDefinition | null = null;
-
-  if (!url) return null;
-
-  for (const [key, value] of routeMap.entries()) {
-    if (url.startsWith(key)) {
-      if (routeValue === null || key.length > url.length) routeValue = value;
-    }
-  }
-
-  return routeValue;
-}
-//Transforms http headers to fetch header type
-function transformHttpHeaders(httpHeaders: IncomingHttpHeaders): HeadersInit {
-  const fetchHeaders = new Headers();
-
-  Object.entries(httpHeaders).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      value.forEach((v) => fetchHeaders.append(key, v));
-    } else if (value) {
-      fetchHeaders.append(key, value);
-    }
-  });
-
-  return fetchHeaders;
 }

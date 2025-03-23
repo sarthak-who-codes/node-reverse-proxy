@@ -8,12 +8,6 @@
 - Rate limiting
 - Logging
 
-### Upcoming Features
-
-- SSL termination (planning)
-- Configuration update with restarting (wip)
-- YAML support(wip)
-
 ## Getting started
 
 1. **Clone repo:**
@@ -82,6 +76,13 @@ config
     ├── cache (Object) ❌ ↪ **Overrides root-level if present**
 
 ```
+
+### Important notes
+
+1. Precedence order of fields of `header` -> `remove` > `modify` > `add`.
+2. All time related fileds are taken in milisecods.
+3. Route matching uses longest match method.
+4. Absolute pathes have to be provided.
 
 ### Example `JSON` configuration file
 
@@ -161,9 +162,8 @@ config
 }
 ```
 
-### Important notes
+## Upcoming Features
 
-1. Precedence order of fields of `header` -> `remove` > `modify` > `add`.
-2. All time related fileds are taken in milisecods.
-3. Route matching uses longest match method.
-4. Absolute pathes have to be provided.
+- SSL termination (planning)
+- Configuration update with restarting (wip)
+- YAML support(wip)

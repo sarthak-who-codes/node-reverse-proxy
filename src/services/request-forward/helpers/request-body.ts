@@ -1,6 +1,6 @@
 import { IncomingMessage } from "node:http";
 
-export function getStructuredRequest(req: IncomingMessage) {
+export function getRequestBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
       let body = "";

@@ -1,4 +1,4 @@
-import { array, boolean, optional, string, z } from "zod";
+import { z } from "zod";
 
 /**
  * <---------------------Missing features------------------------->
@@ -18,37 +18,21 @@ import { array, boolean, optional, string, z } from "zod";
         "type": "basic",
         "users": [{ "username": "admin", "password": "secret" }]
       }
-
-* <-------------Caching------------>
-* "cache": {
-        "enabled": true,
-        "ttl": 300,
-        "methods": ["GET"],
-        "maxSize": "100mb"
-      }
-
-* <------------Rate Limiting------>
-* "rateLimiting": {
-        "enabled": true,
-        "maxRequests": 100,
-        "timeWindow": 60
-      },
  */
 
 export const rateLimitSchema = z.object({
-  enabled: z.boolean().default(false),
-  maxRequests: z.number().max(1000000).min(0).default(1000000).optional(),
+  enabled: z.boolean(),
+  maxRequests: z.number().max(1000000).min(0).default(10),
   timeWindowMs: z
     .number()
     .max(24 * 60 * 60 * 1000)
     .min(25)
-    .default(60 * 1000)
-    .optional(),
+    .default(60 * 1000),
 });
 
 export const headerSchema = z.object({
   add: z.record(z.string(), z.string()).optional(),
-  remove: z.array(string()).optional(),
+  remove: z.array(z.string()).optional(),
   modify: z.record(z.string(), z.string()).optional(),
 });
 
@@ -67,22 +51,6 @@ export const cacheSchema = z.object({
   enabled: z.boolean(),
   ttl: z.number().min(100),
   methods: z.array(z.enum(["GET", "POST", "PUT", "DELETE", "OPTIONS"])),
-  maxSize: z.enum([
-    "1mb",
-    "2mb",
-    "3mb",
-    "4mb",
-    "5mb",
-    "7mb",
-    "10mb",
-    "12mb",
-    "15mb",
-    "20mb",
-    "25mb",
-    "30mb",
-    "40mb",
-    "50mb",
-  ]),
 });
 export const routeSchema = z.object({
   name: z.string().min(1),
@@ -134,17 +102,31 @@ export const configSchema = z.object({
     ]),
   }),
   defaultProtocol: z.enum(["http", "https"]).default("http"),
-  logging: z.object({
-    enabled: z.boolean(),
-    level: z.enum(["info", "warn", "error"]),
-    file: z.string().optional(),
-  }),
+  logging: z
+    .object({
+      enabled: z.boolean(),
+      level: z.enum([
+        "info",
+        "debug",
+        "warn",
+        "error",
+        "fatal",
+        "silent",
+        "trace",
+      ]),
+      file: z.string().optional(),
+    })
+    .optional(),
   loadBalance: z
     .enum(["round_robin", "least_traffic"], {
       message: "Load balancing algorithm is missing or not available",
     })
     .optional(),
-  cache: cacheSchema.optional(),
+  cache: cacheSchema.default({
+    enabled: true,
+    methods: ["GET"],
+    ttl: 60 * 1000,
+  }),
   rateLimiting: rateLimitSchema.optional(),
   headers: headerSchema.optional(),
   routes: z.array(routeSchema),

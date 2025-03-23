@@ -17,7 +17,7 @@
   },
   "rateLimiting": {
     "enabled": true,
-    "maxRequests": 100,
+    "maxRequests": 10,
     "timeWindow": 60
   },
   "loadBalance": "round_robin",
@@ -26,8 +26,8 @@
       "name": "api-service",
       "path": "/api",
       "targets": [
-        { "host": "localhost", "port": 3000, "weight": 3 },
-        { "host": "localhost", "port": 3001, "weight": 1 },
+        { "host": "localhost", "port": 9000, "weight": 3 },
+        { "host": "localhost", "port": 9001, "weight": 1 },
         "http://localhost:9000"
       ],
       "loadBalance": "least_traffic",
@@ -39,10 +39,10 @@
       }
     },
     {
-        "name": "more-detailed-api",
-        "path": "/api/v3",
-        "targets": [ "http://localhost:9000", "http://localhost:9001" ],
-        "headers": {
+      "name": "more-detailed-api",
+      "path": "/api/v3",
+      "targets": ["http://localhost:9000", "http://localhost:9001"],
+      "headers": {
         "add": {
           "X-Frame-Options": "DIFFERENTORIGIN"
         }
@@ -51,10 +51,21 @@
     {
       "name": "frontend",
       "path": "/",
-      "targets": [{ "host": "localhost", "port": 8000 }],
+      "targets": [
+        { "host": "localhost", "port": 9000, "weight": 2 },
+        { "host": "localhost", "port": 9001, "weight": 1 },
+        { "host": "localhost", "port": 9002, "weight": 4 },
+        { "host": "localhost", "port": 9003, "weight": 3 },
+        { "host": "localhost", "port": 9004, "weight": 2 },
+        { "host": "localhost", "port": 9005, "weight": 3 },
+        { "host": "localhost", "port": 9006, "weight": 1 }
+      ],
       "headers": {
         "add": {
           "X-Frame-Options": "SAMEORIGIN"
+        },
+        "modify": {
+          "user-agent": "Mozilla/5.0"
         }
       }
     }

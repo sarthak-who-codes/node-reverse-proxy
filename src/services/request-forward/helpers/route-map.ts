@@ -4,20 +4,37 @@ import {
   headerSchema,
   rateLimitSchema,
   TConfigSchmea,
-} from "../lib/zod/config.zod.js";
+} from "../../../lib/zod/config.zod.js";
+import { RoundRobin } from "./load-balance/round-robin.js";
+import { LeastConnection } from "./load-balance/least-connection.js";
 
-export function prepareRouteMap(
+export type TRouteDefinition = TRouteMapValue & {
+  lbInstance: RoundRobin | LeastConnection;
+};
+
+const mappedRoutes = new Map();
+let initialized = false;
+
+export function getRouteMap(): Map<string, TRouteDefinition> {
+  if (initialized === false) throw new Error("Route map not initialized ❌");
+
+  return mappedRoutes;
+}
+
+export function initializeRouteMap(
   config: TConfigSchmea
-): Map<string, TRouteMapValue> {
-  const mappedRoutes = new Map();
-
-  for (const route of config.routes) {
-    const obj = transformObject(route, config);
-    mappedRoutes.set(route.path, obj);
+): Map<string, TRouteDefinition> {
+  if (initialized === false) {
+    for (const route of config.routes) {
+      const obj = transformObject(route, config);
+      mappedRoutes.set(route.path, obj);
+      // console.log(obj);
+    }
+    initialized = true;
+    console.log("Route map preparation complete 🚀");
+  } else {
+    console.log("Routes already mapped ✅");
   }
-
-  console.log(mappedRoutes);
-  console.log("Route map preparation complete 🚀")
 
   return mappedRoutes;
 }
@@ -25,25 +42,31 @@ export function prepareRouteMap(
 const transformObject = (
   route: TConfigSchmea["routes"][0],
   config: TConfigSchmea
-): TRouteMapValue => {
-  // console.log("--------------------")
-  // console.log("Config load balancing algo: " + config.loadBalance);
-  // console.log("Route load balancing algo: " + route.loadBalance);
-  // console.log("--------------------")
-  
+): TRouteDefinition => {
+  const loadBalance =
+    route.loadBalance ?? config.loadBalance ?? "least_traffic";
+  const upstreamServers = prepareUpstreamUrls(route.targets, config);
+  const lbInstance =
+    loadBalance === "least_traffic"
+      ? new LeastConnection(upstreamServers)
+      : new RoundRobin(upstreamServers);
+
   return {
     route: route.path,
-    loadBalance: route.loadBalance ?? config.loadBalance ?? "least_traffic",
-    upstreams: prepareUpstreamUrls(route.targets, config),
+    loadBalance,
+    upstreams: upstreamServers,
     headers: prepareHeaders(route.headers, config.headers),
+    lbInstance,
+    cache: route.cache ?? config.cache,
+    rateLimit: route.rateLimiting ?? config.rateLimiting ?? undefined,
   };
 };
 
 function prepareUpstreamUrls(
   upstreams: TConfigSchmea["routes"][0]["targets"],
   config: TConfigSchmea
-): TRouteMapValue["upstreams"] {
-  const upstreamServers: TRouteMapValue["upstreams"] = [];
+): TRouteDefinition["upstreams"] {
+  const upstreamServers: TRouteDefinition["upstreams"] = [];
 
   //<-----------Upstream Urls-------------------->
   if (Array.isArray(upstreams)) {
@@ -126,8 +149,8 @@ const ZodSchema = z.object({
       interval: z.number(),
     })
     .optional(),
-  cache: cacheSchema.omit({ enabled: true }).optional(),
-  rateLimit: rateLimitSchema.omit({ enabled: true }).optional(),
+  cache: cacheSchema,
+  rateLimit: rateLimitSchema.optional(),
 });
 
 export type TRouteMapValue = z.infer<typeof ZodSchema>;

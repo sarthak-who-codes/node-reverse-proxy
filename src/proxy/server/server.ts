@@ -1,22 +1,16 @@
 import http from "node:http";
 import { TConfigSchmea } from "../../lib/zod/config.zod.js";
-import { rateLimiterMiddleware } from "../../services/rate-limit/index.js";
-import { cachingMiddleware } from "../../services/cache/index.js";
 import { forwadingMiddleware } from "../../services/request-forward/index.js";
+import { getLogger } from "../../lib/logger/pino.js";
 
 export async function createProxyServer(config: TConfigSchmea) {
+  const logger = getLogger();
   try {
     const httpServer = await createHttpServer(config.server.port);
     httpServer.on("request", async (req, res) => {
       try {
-
-        if (await rateLimiterMiddleware(req, res)) return;
-
-        if (await cachingMiddleware(req, res)) return;
-
-        await forwadingMiddleware(req, res);
-        res.writeHead(200);
-        res.end("Head");
+        await forwadingMiddleware(req, res, config);
+        return;
       } catch (error) {
         console.log(error);
         res.writeHead(500);
